@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Departamento</title>
+<style>
+  :root {
+    --bg: #f5f5f0;
+    --card: #ffffff;
+    --primary: #2d6a4f;
+    --primary-light: #52b788;
+    --accent: #d4a017;
+    --danger: #e63946;
+    --text: #1a1a2e;
+    --muted: #6c757d;
+    --border: #dee2e6;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* Auth */
+  #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
+  .login-card { background: var(--card); border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 380px; box-shadow: var(--shadow); }
+  .login-card h1 { font-size: 1.5rem; color: var(--primary); margin-bottom: 0.25rem; }
+  .login-card p { color: var(--muted); margin-bottom: 2rem; font-size: 0.9rem; }
+
+  /* Layout */
+  #app { display: none; }
+  header { background: var(--primary); color: white; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem; }
+  .header-right { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; }
+  nav { background: var(--card); border-bottom: 1px solid var(--border); display: flex; gap: 0; overflow-x: auto; }
+  nav button { padding: 0.85rem 1.5rem; border: none; background: none; cursor: pointer; font-size: 0.9rem; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.2s; }
+  nav button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+  main { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+  /* Forms & Inputs */
+  .form-group { margin-bottom: 1rem; }
+  label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  input, textarea, select { width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; font-family: inherit; background: white; transition: border-color 0.2s; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary-light); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.65rem 1.2rem; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: #1b4332; }
+  .btn-secondary { background: var(--border); color: var(--text); }
+  .btn-secondary:hover { background: #c8d0d8; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #c1121f; }
+  .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* Cards */
+  .card { background: var(--card); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1rem; }
+  .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; }
+
+  /* Calendar */
+  .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .calendar-header h2 { font-size: 1.1rem; font-weight: 700; text-transform: capitalize; }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-day-name { text-align: center; font-size: 0.75rem; font-weight: 700; color: var(--muted); padding: 0.4rem 0; text-transform: uppercase; }
+  .cal-day { min-height: 52px; border-radius: 8px; padding: 0.3rem; font-size: 0.85rem; cursor: default; background: white; border: 1.5px solid transparent; position: relative; }
+  .cal-day.other-month { opacity: 0.3; }
+  .cal-day.today { border-color: var(--primary-light); }
+  .cal-day.past { background: #f8f8f8; color: #bbb; }
+  .cal-day.reserved { background: #d8f3dc; border-color: var(--primary-light); }
+  .cal-day.reserved.mine { background: #b7e4c7; }
+  .cal-day.checkin { background: #95d5b2; border-color: var(--primary); }
+  .cal-day.checkout { background: #ffd166; border-color: var(--accent); }
+  .cal-day-num { font-weight: 600; }
+  .cal-tag { font-size: 0.65rem; color: var(--primary); font-weight: 700; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Reservations list */
+  .reservation-item { display: flex; align-items: center; gap: 1rem; padding: 1rem; border-radius: 10px; background: var(--bg); margin-bottom: 0.6rem; border-left: 4px solid var(--primary); }
+  .reservation-item.past { border-left-color: var(--muted); opacity: 0.7; }
+  .res-info { flex: 1; }
+  .res-name { font-weight: 700; font-size: 0.95rem; }
+  .res-dates { font-size: 0.85rem; color: var(--muted); margin-top: 0.15rem; }
+  .res-notes { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; font-style: italic; }
+  .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+  .badge-active { background: #d8f3dc; color: var(--primary); }
+  .badge-past { background: #f0f0f0; color: var(--muted); }
+  .badge-upcoming { background: #fff3cd; color: #856404; }
+
+  /* Alert */
+  .alert { padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; }
+  .alert-success { background: #d1e7dd; color: #0f5132; }
+  .alert-error { background: #f8d7da; color: #842029; }
+  .alert-info { background: #d0f0fd; color: #0c5460; }
+
+  /* Admin */
+  .user-row { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: var(--bg); border-radius: 8px; margin-bottom: 0.5rem; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
+  .modal { background: var(--card); border-radius: 16px; padding: 2rem; width: 100%; max-width: 480px; box-shadow: 0 8px 40px rgba(0,0,0,0.2); }
+  .modal h2 { font-size: 1.1rem; color: var(--primary); margin-bottom: 1.25rem; }
+
+  /* Utils */
+  .hidden { display: none !important; }
+  .flex { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .mt-1 { margin-top: 0.5rem; }
+  .mt-2 { margin-top: 1rem; }
+  .text-muted { color: var(--muted); font-size: 0.9rem; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 500px) { .grid-2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <h2>✏️ Editar Reserva</h2>
+    <div id="edit-alert"></div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Fecha de Entrada</label>
+        <input type="date" id="edit-checkin">
+      </div>
+      <div class="form-group">
+        <label>Fecha de Salida</label>
+        <input type="date" id="edit-checkout">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Huésped</label>
+      <select id="edit-user"></select>
+    </div>
+    <div class="form-group">
+      <label>Notas (opcional)</label>
+      <textarea id="edit-notes"></textarea>
+    </div>
+    <div class="flex">
+      <button class="btn btn-primary" onclick="saveEdit()">Guardar</button>
+      <button class="btn btn-secondary" onclick="closeEditModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🏠 Departamento</h1>
+    <p>Ingresa con tu usuario para continuar</p>
+    <div id="login-alert"></div>
+    <div class="form-group">
+      <label>Usuario</label>
+      <input type="text" id="login-user" placeholder="tu usuario" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:0.5rem" onclick="login()">Entrar</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <header>
+    <h1>🏠 <span id="apt-name">Departamento</span></h1>
+    <div class="header-right">
+      <span>Hola, <strong id="header-user"></strong></span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Salir</button>
+    </div>
+  </header>
+  <nav>
+    <button class="active" onclick="showTab('calendar')">📅 Calendario</button>
+    <button onclick="showTab('reserve')">➕ Nueva Reserva</button>
+    <button onclick="showTab('list')">📋 Reservas</button>
+    <button id="admin-tab" class="hidden" onclick="showTab('admin')">⚙️ Admin</button>
+  </nav>
+
+  <main>
+    <!-- CALENDAR TAB -->
+    <div id="tab-calendar">
+      <div class="card">
+        <div class="calendar-header">
+          <button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">← Anterior</button>
+          <h2 id="cal-title"></h2>
+          <button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">Siguiente →</button>
+        </div>
+        <div class="calendar-grid" id="cal-grid"></div>
+      </div>
+      <div class="flex" style="font-size:0.8rem;color:var(--muted);gap:1.2rem;flex-wrap:wrap">
+        <span><span style="display:inline-block;width:14px;height:14px;background:#95d5b2;border-radius:3px;vertical-align:middle"></span> Check-in</span>
+        <span><span style="display:inline-block;width:14px;height:14px;background:#ffd166;border-radius:3px;vertical-align:middle"></span> Check-out</span>
+        <span><span style="display:inline-block;width:14px;height:14px;background:#d8f3dc;border-radius:3px;vertical-align:middle"></span> Ocupado</span>
+        <span><span style="display:inline-block;width:14px;height:14px;background:#b7e4c7;border-radius:3px;vertical-align:middle"></span> Tu reserva</span>
+      </div>
+    </div>
+
+    <!-- RESERVE TAB -->
+    <div id="tab-reserve" class="hidden">
+      <div class="card">
+        <div class="card-title">➕ Nueva Reserva</div>
+        <div id="reserve-alert"></div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Fecha de Entrada</label>
+            <input type="date" id="res-checkin">
+          </div>
+          <div class="form-group">
+            <label>Fecha de Salida</label>
+            <input type="date" id="res-checkout">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notas (opcional)</label>
+          <textarea id="res-notes" placeholder="Llegada tardía, necesidades especiales…"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="createReservation()">Confirmar Reserva</button>
+      </div>
+      <div class="card">
+        <div class="card-title">📲 Notificación de Limpieza</div>
+        <p class="text-muted">Al confirmar la reserva, se enviará automáticamente un WhatsApp a la persona de limpieza con las fechas de entrada y salida.</p>
+      </div>
+    </div>
+
+    <!-- LIST TAB -->
+    <div id="tab-list" class="hidden">
+      <div class="card">
+        <div class="card-title">📋 Todas las Reservas</div>
+        <div id="reservations-list"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN TAB -->
+    <div id="tab-admin" class="hidden">
+      <div class="card">
+        <div class="card-title">⚙️ Configuración General</div>
+        <div id="admin-alert"></div>
+        <div class="form-group">
+          <label>Nombre del Departamento</label>
+          <input type="text" id="cfg-apt-name" placeholder="Mi Departamento">
+        </div>
+        <div class="card-title mt-2" style="margin-top:1.5rem">📲 WhatsApp Limpieza</div>
+        <p class="text-muted" style="margin-bottom:1rem">Usa <strong>CallMeBot</strong> (gratis). La persona de limpieza debe enviar el mensaje <em>"I allow callmebot to send me messages"</em> al <strong>+34 644 65 21 32</strong> en WhatsApp para activar.</p>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Nombre (limpieza)</label>
+            <input type="text" id="cfg-cleaning-name" placeholder="María">
+          </div>
+          <div class="form-group">
+            <label>Teléfono (con código país)</label>
+            <input type="text" id="cfg-cleaning-phone" placeholder="521234567890">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>API Key de CallMeBot</label>
+          <input type="text" id="cfg-cleaning-apikey" placeholder="123456">
+        </div>
+        <div class="flex">
+          <button class="btn btn-primary" onclick="saveConfig()">Guardar</button>
+          <button class="btn btn-secondary" onclick="testWhatsApp()">Enviar prueba WhatsApp</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👥 Usuarios</div>
+        <div id="users-list"></div>
+        <div style="border-top:1px solid var(--border);margin-top:1rem;padding-top:1rem">
+          <div class="card-title" style="font-size:0.9rem">Agregar usuario</div>
+          <div class="grid-2">
+            <div class="form-group"><label>Usuario</label><input type="text" id="new-username" placeholder="nombre"></div>
+            <div class="form-group"><label>Contraseña</label><input type="password" id="new-password" placeholder="••••"></div>
+          </div>
+          <div class="form-group">
+            <label>Rol</label>
+            <select id="new-role"><option value="guest">Huésped</option><option value="admin">Admin</option></select>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addUser()">Agregar</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+let currentUser = null;
+let reservations = [];
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DAYS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+async function api(method, url, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include' };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  return res.json();
+}
+
+function showAlert(containerId, msg, type = 'success') {
+  const el = document.getElementById(containerId);
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  if (type !== 'error') setTimeout(() => el.innerHTML = '', 4000);
+}
+
+async function login() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const data = await api('POST', '/api/login', { username, password });
+  if (data.error) return showAlert('login-alert', data.error, 'error');
+  currentUser = data;
+  initApp();
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+async function logout() {
+  await api('POST', '/api/logout');
+  location.reload();
+}
+
+async function initApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('header-user').textContent = currentUser.username;
+  if (currentUser.role === 'admin') document.getElementById('admin-tab').classList.remove('hidden');
+  await loadReservations();
+  renderCalendar();
+  setDefaultDates();
+  if (currentUser.role === 'admin') await loadAdminData();
+}
+
+function setDefaultDates() {
+  const today = new Date();
+  const fmt = d => d.toISOString().split('T')[0];
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  document.getElementById('res-checkin').value = fmt(today);
+  document.getElementById('res-checkout').value = fmt(tomorrow);
+  document.getElementById('res-checkin').min = fmt(today);
+}
+
+async function loadReservations() {
+  const data = await api('GET', '/api/reservations');
+  reservations = Array.isArray(data) ? data : [];
+}
+
+function showTab(name) {
+  ['calendar','reserve','list','admin'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
+  });
+  document.querySelectorAll('nav button').forEach((b, i) => {
+    const tabs = ['calendar','reserve','list','admin'];
+    b.classList.toggle('active', tabs[i] === name);
+  });
+  if (name === 'list') renderList();
+  if (name === 'calendar') renderCalendar();
+  if (name === 'admin') loadAdminData();
+}
+
+// ─── Calendar ────────────────────────────────────────────────────────────────
+function changeMonth(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('cal-title').textContent = `${MONTHS[calMonth]} ${calYear}`;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = DAYS.map(d => `<div class="cal-day-name">${d}</div>`).join('');
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+  const today = new Date().toISOString().split('T')[0];
+
+  // prev month padding
+  for (let i = firstDay - 1; i >= 0; i--) {
+    grid.innerHTML += `<div class="cal-day other-month"><span class="cal-day-num">${daysInPrev - i}</span></div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isPast = dateStr < today;
+    const isToday = dateStr === today;
+
+    let cls = 'cal-day';
+    if (isPast && !isToday) cls += ' past';
+    if (isToday) cls += ' today';
+
+    let tag = '';
+    for (const r of reservations) {
+      const isMine = r.user_id === currentUser.id;
+      if (dateStr === r.checkin) {
+        cls += ' checkin' + (isMine ? ' mine' : '');
+        tag = `<div class="cal-tag">✈️ ${r.username}</div>`;
+        break;
+      } else if (dateStr === r.checkout) {
+        cls += ' checkout' + (isMine ? ' mine' : '');
+        tag = `<div class="cal-tag">🧹 ${r.username}</div>`;
+        break;
+      } else if (dateStr > r.checkin && dateStr < r.checkout) {
+        cls += ' reserved' + (isMine ? ' mine' : '');
+        tag = `<div class="cal-tag">🏠 ${r.username}</div>`;
+        break;
+      }
+    }
+    grid.innerHTML += `<div class="${cls}"><span class="cal-day-num">${d}</span>${tag}</div>`;
+  }
+
+  // next month padding
+  const total = firstDay + daysInMonth;
+  const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= remaining; i++) {
+    grid.innerHTML += `<div class="cal-day other-month"><span class="cal-day-num">${i}</span></div>`;
+  }
+}
+
+// ─── Reservations ─────────────────────────────────────────────────────────────
+async function createReservation() {
+  const checkin = document.getElementById('res-checkin').value;
+  const checkout = document.getElementById('res-checkout').value;
+  const notes = document.getElementById('res-notes').value;
+  if (!checkin || !checkout) return showAlert('reserve-alert', 'Selecciona las fechas', 'error');
+  if (checkin >= checkout) return showAlert('reserve-alert', 'La salida debe ser después de la entrada', 'error');
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+
+  const data = await api('POST', '/api/reservations', { checkin, checkout, notes });
+  btn.disabled = false;
+  btn.textContent = 'Confirmar Reserva';
+
+  if (data.error) return showAlert('reserve-alert', data.error, 'error');
+
+  const waMsg = data.notified ? ' ✅ WhatsApp enviado a limpieza.' : ' ⚠️ WhatsApp no enviado (configura en Admin).';
+  showAlert('reserve-alert', '¡Reserva confirmada!' + waMsg, 'success');
+  document.getElementById('res-notes').value = '';
+  await loadReservations();
+  renderCalendar();
+}
+
+function formatDateDisplay(str) {
+  if (!str) return '';
+  const [y, m, d] = str.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function renderList() {
+  const container = document.getElementById('reservations-list');
+  if (!reservations.length) { container.innerHTML = '<p class="text-muted">Sin reservas aún.</p>'; return; }
+  const today = new Date().toISOString().split('T')[0];
+  const sorted = [...reservations].sort((a, b) => b.checkin.localeCompare(a.checkin));
+  container.innerHTML = sorted.map(r => {
+    const isActive = r.checkin <= today && r.checkout >= today;
+    const isPast = r.checkout < today;
+    const badgeCls = isActive ? 'badge-active' : isPast ? 'badge-past' : 'badge-upcoming';
+    const badgeLabel = isActive ? 'Activa' : isPast ? 'Pasada' : 'Próxima';
+    const canDelete = r.user_id === currentUser.id || currentUser.role === 'admin';
+    return `
+      <div class="reservation-item ${isPast ? 'past' : ''}">
+        <div class="res-info">
+          <div class="res-name">👤 ${r.username} <span class="badge ${badgeCls}">${badgeLabel}</span></div>
+          <div class="res-dates">📅 ${formatDateDisplay(r.checkin)} → ${formatDateDisplay(r.checkout)}</div>
+          ${r.notes ? `<div class="res-notes">${r.notes}</div>` : ''}
+          <div class="res-dates" style="margin-top:0.2rem;font-size:0.75rem">
+            ${r.notified ? '✅ Limpieza notificada' : '⚠️ Sin notificar'}
+          </div>
+        </div>
+        <div class="flex">
+          ${currentUser.role === 'admin' ? `<button class="btn btn-secondary btn-sm" onclick="openEditModal(${r.id})">✏️ Editar</button>` : ''}
+          ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteReservation(${r.id})">Borrar</button>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+let editingId = null;
+let allUsers = [];
+
+async function openEditModal(id) {
+  const r = reservations.find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
+  document.getElementById('edit-checkin').value = r.checkin;
+  document.getElementById('edit-checkout').value = r.checkout;
+  document.getElementById('edit-notes').value = r.notes || '';
+  document.getElementById('edit-alert').innerHTML = '';
+
+  if (!allUsers.length) allUsers = await api('GET', '/api/admin/users');
+  const sel = document.getElementById('edit-user');
+  sel.innerHTML = allUsers.map(u =>
+    `<option value="${u.id}" ${u.id === r.user_id ? 'selected' : ''}>${u.username}</option>`
+  ).join('');
+
+  document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+  editingId = null;
+  document.getElementById('edit-modal').classList.add('hidden');
+}
+
+async function saveEdit() {
+  const checkin  = document.getElementById('edit-checkin').value;
+  const checkout = document.getElementById('edit-checkout').value;
+  const notes    = document.getElementById('edit-notes').value;
+  const user_id  = parseInt(document.getElementById('edit-user').value);
+  if (!checkin || !checkout || checkin >= checkout)
+    return showAlert('edit-alert', 'Fechas inválidas', 'error');
+
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  const data = await api('PUT', `/api/reservations/${editingId}`, { checkin, checkout, notes, user_id });
+  btn.disabled = false; btn.textContent = 'Guardar';
+
+  if (data.error) return showAlert('edit-alert', data.error, 'error');
+  closeEditModal();
+  await loadReservations();
+  renderList();
+  renderCalendar();
+}
+
+async function deleteReservation(id) {
+  if (!confirm('¿Borrar esta reserva?')) return;
+  const data = await api('DELETE', `/api/reservations/${id}`);
+  if (data.error) return alert(data.error);
+  await loadReservations();
+  renderList();
+  renderCalendar();
+}
+
+// ─── Admin ────────────────────────────────────────────────────────────────────
+async function loadAdminData() {
+  const [cfg, users] = await Promise.all([
+    api('GET', '/api/admin/config'),
+    api('GET', '/api/admin/users')
+  ]);
+  document.getElementById('cfg-apt-name').value = cfg.apartment_name || '';
+  document.getElementById('cfg-cleaning-name').value = cfg.cleaning_name || '';
+  document.getElementById('cfg-cleaning-phone').value = cfg.cleaning_phone || '';
+  document.getElementById('cfg-cleaning-apikey').value = cfg.cleaning_apikey || '';
+  if (cfg.apartment_name) document.getElementById('apt-name').textContent = cfg.apartment_name;
+
+  const ul = document.getElementById('users-list');
+  ul.innerHTML = users.map(u => `
+    <div class="user-row">
+      <span><strong>${u.username}</strong> <span class="badge badge-${u.role === 'admin' ? 'active' : 'upcoming'}">${u.role}</span></span>
+      <div class="flex">
+        <input type="password" id="pw-${u.id}" placeholder="nueva contraseña" style="width:130px;padding:0.35rem 0.6rem;font-size:0.8rem">
+        <button class="btn btn-secondary btn-sm" onclick="changePassword(${u.id})">Cambiar</button>
+        ${u.id !== currentUser.id ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id}, '${u.username}')">Eliminar</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+async function saveConfig() {
+  const data = await api('POST', '/api/admin/config', {
+    apartment_name: document.getElementById('cfg-apt-name').value,
+    cleaning_name: document.getElementById('cfg-cleaning-name').value,
+    cleaning_phone: document.getElementById('cfg-cleaning-phone').value,
+    cleaning_apikey: document.getElementById('cfg-cleaning-apikey').value,
+  });
+  if (data.ok) {
+    showAlert('admin-alert', 'Configuración guardada', 'success');
+    const name = document.getElementById('cfg-apt-name').value;
+    if (name) document.getElementById('apt-name').textContent = name;
+  }
+}
+
+async function testWhatsApp() {
+  showAlert('admin-alert', 'Enviando mensaje de prueba…', 'info');
+  const data = await api('POST', '/api/admin/test-whatsapp');
+  showAlert('admin-alert', data.ok ? '✅ WhatsApp enviado correctamente' : '❌ Error: ' + (data.reason || data.status), data.ok ? 'success' : 'error');
+}
+
+async function changePassword(userId) {
+  const pw = document.getElementById('pw-' + userId).value;
+  if (!pw) return;
+  const data = await api('POST', `/api/admin/users/${userId}/password`, { password: pw });
+  showAlert('admin-alert', data.ok ? 'Contraseña actualizada' : data.error, data.ok ? 'success' : 'error');
+  document.getElementById('pw-' + userId).value = '';
+}
+
+async function deleteUser(id, username) {
+  if (!confirm(`¿Eliminar a "${username}"? Sus reservas quedarán sin usuario asignado.`)) return;
+  const data = await api('DELETE', `/api/admin/users/${id}`);
+  if (data.ok) {
+    allUsers = [];
+    showAlert('admin-alert', `Usuario "${username}" eliminado`, 'success');
+    loadAdminData();
+    await loadReservations();
+    renderCalendar();
+  } else {
+    showAlert('admin-alert', data.error, 'error');
+  }
+}
+
+async function addUser() {
+  const username = document.getElementById('new-username').value.trim();
+  const password = document.getElementById('new-password').value;
+  const role = document.getElementById('new-role').value;
+  if (!username || !password) return;
+  const data = await api('POST', '/api/admin/users', { username, password, role });
+  if (data.ok) { showAlert('admin-alert', 'Usuario creado', 'success'); loadAdminData(); }
+  else showAlert('admin-alert', data.error, 'error');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+(async () => {
+  const data = await api('GET', '/api/me');
+  if (data.user) { currentUser = data.user; initApp(); }
+})();
+</script>
+</body>
+</html>

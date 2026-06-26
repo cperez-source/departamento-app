@@ -1,0 +1,4 @@
+node_modules/
+departamento.db
+logs/
+.claude/
