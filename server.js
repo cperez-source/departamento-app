@@ -233,5 +233,5 @@ app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3001; // Railway inyecta PORT automáticamente
 app.listen(PORT, () => console.log(`App corriendo en http://localhost:${PORT}`));
